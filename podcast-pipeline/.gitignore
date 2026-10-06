@@ -1,0 +1,5 @@
+.venv/
+episodes/
+output/
+__pycache__/
+.DS_Store

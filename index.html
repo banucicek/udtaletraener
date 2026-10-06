@@ -1,0 +1,446 @@
+<!doctype html><html lang="da"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0"><title>Udtaletræner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;600;700&family=Literata:opsz,wght@7..72,400;7..72,500&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one narrow practice column — phrase strip, caption card, controls, the two curves, then feedback. */
+:root{
+  --bg:#EEF2F1; --surface:#FFFFFF; --ink:#16211F; --muted:#5B6A66; --line:#D3DCD9;
+  --ref:#1E5563; --me:#B0306A; --warn:#C98A12; --warn-bg:rgba(201,138,18,.16); --good:#2E7A4E;
+  --chip:#E1E8E6;
+  --f-cap:"Literata",Georgia,"Times New Roman",serif;
+  --f-ui:"Familjen Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-num:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#101615; --surface:#182120; --ink:#E4EBE9; --muted:#93A39F; --line:#2B3735;
+  --ref:#7FC6D6; --me:#F17FB2; --warn:#E8B04A; --warn-bg:rgba(232,176,74,.16); --good:#6CC892; --chip:#212C2A; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#101615; --surface:#182120; --ink:#E4EBE9; --muted:#93A39F; --line:#2B3735;
+  --ref:#7FC6D6; --me:#F17FB2; --warn:#E8B04A; --warn-bg:rgba(232,176,74,.16); --good:#6CC892; --chip:#212C2A; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-ui);font-size:15px;line-height:1.5}
+.wrap{max-width:680px;margin:0 auto;padding:20px 16px 48px;display:flex;flex-direction:column;gap:18px}
+header{display:flex;flex-direction:column;gap:2px}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+h1{margin:0;font-size:26px;font-weight:700;letter-spacing:-.01em;text-wrap:balance}
+.strip{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}
+.chip{flex:0 0 auto;max-width:210px;display:flex;align-items:center;gap:6px;border:1px solid transparent;background:var(--chip);color:var(--ink);font:500 14px var(--f-ui);padding:7px 12px;border-radius:999px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip[aria-current="true"]{background:var(--surface);border-color:var(--ink)}
+.chip .dot{width:7px;height:7px;border-radius:50%;background:var(--line);flex:0 0 auto}
+.chip .dot.on{background:var(--ref)}
+.chip span{overflow:hidden;text-overflow:ellipsis}
+.chip.add{background:transparent;border:1px dashed var(--muted);color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 16px;display:flex;flex-direction:column;gap:14px;min-width:0}
+textarea.caption{width:100%;border:0;background:transparent;color:var(--ink);font:400 clamp(22px,6vw,30px)/1.3 var(--f-cap);resize:none;padding:0;overflow:hidden;outline:none;border-bottom:1px dashed transparent}
+textarea.caption:focus{border-bottom-color:var(--line)}
+.focus{margin:0;color:var(--muted);font-size:14px}
+.focus:empty{display:none}
+.srcrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;font-size:13px;color:var(--muted)}
+.srcrow .name{font-family:var(--f-num);font-size:12px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.btns{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+button{font:600 14px var(--f-ui);cursor:pointer}
+button:focus-visible,.chip:focus-visible,label.btn:focus-within{outline:2px solid var(--ref);outline-offset:2px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:11px 10px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);min-height:46px;text-align:center;font:600 14px var(--f-ui);cursor:pointer}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.rec{background:var(--me);border-color:var(--me);color:var(--surface)}
+.btn.rec.on{animation:pulse 1.2s ease-in-out infinite}
+.btn.small{min-height:34px;padding:6px 10px;font-size:13px;font-weight:500}
+.btn.link{border:0;background:none;color:var(--ref);padding:0;min-height:0;text-decoration:underline;text-underline-offset:3px;font-weight:500;font-size:13px}
+label.btn input{position:absolute;opacity:0;width:1px;height:1px}
+.sw{width:10px;height:10px;border-radius:50%;display:inline-block}
+.tools{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:transparent;color:var(--muted);padding:6px 10px;font-weight:500;font-size:13px;font-family:var(--f-num)}
+.seg button[aria-pressed="true"]{background:var(--chip);color:var(--ink)}
+.msg{font-size:13px;color:var(--muted);margin:0}
+.msg.err{color:var(--me)}
+.msg:empty{display:none}
+.chart h2,.fb h2{margin:0;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.chart{display:flex;flex-direction:column;gap:8px}
+.chart canvas{width:100%;display:block;border-radius:8px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:18px;height:3px;border-radius:2px;display:inline-block}
+.score{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.score b{font:500 44px/1 var(--f-num);font-variant-numeric:tabular-nums}
+.score small{color:var(--muted);font-size:13px}
+.fb ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.fb li{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start}
+.fb li::before{content:"";width:8px;height:8px;border-radius:50%;margin-top:7px;background:var(--good)}
+.fb li.warn::before{background:var(--warn)}
+.fb li.info::before{background:var(--muted)}
+.foot{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:6px}
+.foot p{margin:0;max-width:65ch}
+.rm{align-self:flex-start}
+@keyframes pulse{50%{opacity:.7}}
+@media (prefers-reduced-motion:reduce){.btn.rec.on{animation:none}}
+@media (max-width:380px){.btns{grid-template-columns:1fr 1fr}.btns .btn.rec{grid-column:1/-1;order:-1}}
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Dansk udtale · melody practice</span>
+    <h1>Udtaletræner</h1>
+  </header>
+
+  <nav class="strip" id="strip" aria-label="Phrases"></nav>
+
+  <section class="card" aria-label="Current phrase">
+    <textarea class="caption" id="caption" rows="1" aria-label="Caption (tap to edit)"></textarea>
+    <p class="focus" id="focus"></p>
+    <div class="srcrow">
+      <label class="btn small" id="loadRefLbl">Load native clip<input type="file" id="refFile" accept="audio/*"></label>
+      <span class="name" id="refName">No native clip yet</span>
+    </div>
+    <div class="btns">
+      <button class="btn" id="playRef" disabled><span class="sw" style="background:var(--ref)"></span>Native</button>
+      <button class="btn rec" id="recBtn">● Record</button>
+      <button class="btn" id="playMe" disabled><span class="sw" style="background:var(--me)"></span>Mine</button>
+    </div>
+    <div class="tools">
+      <label class="btn link">Upload a take instead<input type="file" id="takeFile" accept="audio/*" capture></label>
+      <span class="seg" role="group" aria-label="Playback speed"><button id="sp1" aria-pressed="true">1×</button><button id="sp75" aria-pressed="false">0.75×</button></span>
+    </div>
+    <p class="msg" id="msg"></p>
+  </section>
+
+  <section class="card chart">
+    <h2>Melody · semitones from each speaker's middle</h2>
+    <canvas id="cPitch" height="220" aria-label="Pitch curves"></canvas>
+    <div class="legend"><span><i style="background:var(--ref)"></i>Native</span><span><i style="background:var(--me)"></i>You, time-aligned</span><span><i style="background:var(--warn-bg);height:10px;border:1px solid var(--warn)"></i>Melody differs</span></div>
+    <h2 style="margin-top:6px">Loudness · where the tryk lands</h2>
+    <canvas id="cLoud" height="90" aria-label="Loudness curves"></canvas>
+  </section>
+
+  <section class="card fb" aria-live="polite">
+    <h2>Feedback</h2>
+    <div class="score" id="score"></div>
+    <ul id="fbList"></ul>
+  </section>
+
+  <div class="foot">
+    <button class="btn link rm" id="rmBtn">Remove this phrase</button>
+    <p>Use real recordings of native speakers for the clips. Synthetic voices often get stød wrong. Short clips (one sentence, under 8 seconds) work best.</p>
+    <p>Both curves are measured against each speaker's own middle pitch, so a man and a woman can be compared. Stød shows up as a sudden dip or break in the native curve. Everything is analysed in your browser and nothing is uploaded.</p>
+  </div>
+</div>
+
+<script>
+(function(){
+const $=s=>document.querySelector(s);
+const SR=16000, HOP=160, WIN=400, NF=512, NB=20;
+
+const STARTERS=[
+ {caption:"Hun har en hund.", focus:"Hund has stød, hun does not. Listen for the creaky break in hund."},
+ {caption:"Jeg vil gerne have en kop kaffe.", focus:"Stress falls on kop and kaffe. Gerne and have are quick and light."},
+ {caption:"Hvad hedder du?", focus:"Soft d in hedder. The melody sinks toward the end."},
+ {caption:"Rødgrød med fløde.", focus:"Soft d in all three words, and stød in rød and grød."},
+ {caption:"Det var en dejlig dag.", focus:"Dag has a long vowel with stød. Dejlig is stressed on the first syllable."}
+];
+
+/* ---------- storage (per-browser convenience, optional) ---------- */
+let dbp=null;
+function idb(){ if(dbp) return dbp; dbp=new Promise(res=>{ try{ const r=indexedDB.open("udtale",1); r.onupgradeneeded=()=>r.result.createObjectStore("phrases",{keyPath:"id"}); r.onsuccess=()=>res(r.result); r.onerror=()=>res(null);}catch(e){res(null)} }); return dbp; }
+async function savePhrase(p){ const db=await idb(); if(!db) return; try{ db.transaction("phrases","readwrite").objectStore("phrases").put({id:p.id,order:p.order,caption:p.caption,focus:p.focus||"",refBuf:p.refBuf||null,refType:p.refType||"",refName:p.refName||""}); }catch(e){} }
+async function deletePhrase(id){ const db=await idb(); if(!db) return; try{ db.transaction("phrases","readwrite").objectStore("phrases").delete(id);}catch(e){} }
+async function loadPhrases(){ const db=await idb(); if(!db) return null; return new Promise(res=>{ try{ const r=db.transaction("phrases").objectStore("phrases").getAll(); r.onsuccess=()=>res(r.result||null); r.onerror=()=>res(null);}catch(e){res(null)} }); }
+
+/* ---------- DSP ---------- */
+const hann=new Float32Array(WIN); for(let i=0;i<WIN;i++) hann[i]=0.5-0.5*Math.cos(2*Math.PI*i/(WIN-1));
+const mel=f=>2595*Math.log10(1+f/700), imel=m=>700*(Math.pow(10,m/2595)-1);
+const edges=[]; for(let i=0;i<=NB+1;i++) edges.push(imel(mel(100)+(mel(7000)-mel(100))*i/(NB+1))*NF/SR);
+function fft(re,im){ const n=re.length;
+  for(let i=1,j=0;i<n;i++){ let bit=n>>1; for(;j&bit;bit>>=1) j^=bit; j^=bit; if(i<j){ let t=re[i];re[i]=re[j];re[j]=t; t=im[i];im[i]=im[j];im[j]=t; } }
+  for(let len=2;len<=n;len<<=1){ const ang=-2*Math.PI/len, wr=Math.cos(ang), wi=Math.sin(ang), h=len>>1;
+    for(let i=0;i<n;i+=len){ let cr=1,ci=0; for(let k=0;k<h;k++){ const a=i+k,b=a+h; const tr=re[b]*cr-im[b]*ci, ti=re[b]*ci+im[b]*cr; re[b]=re[a]-tr; im[b]=im[a]-ti; re[a]+=tr; im[a]+=ti; const nc=cr*wr-ci*wi; ci=cr*wi+ci*wr; cr=nc; } } } }
+function bands(pow){ const out=new Float32Array(NB); for(let b=0;b<NB;b++){ const l=edges[b],c=edges[b+1],r=edges[b+2]; let s=0; for(let k=Math.max(0,Math.floor(l));k<=Math.ceil(r)&&k<=NF/2;k++){ const w=k<c?(k-l)/(c-l):(r-k)/(r-c); if(w>0) s+=w*pow[k]; } out[b]=Math.log(s+1e-8);} return out; }
+const median=a=>{ if(!a.length) return NaN; const s=[...a].sort((x,y)=>x-y); const m=s.length>>1; return s.length%2?s[m]:(s[m-1]+s[m])/2; };
+const pct=(a,p)=>{ const s=[...a].sort((x,y)=>x-y); return s[Math.min(s.length-1,Math.max(0,Math.round(p*(s.length-1))))]; };
+
+async function decode(buf){
+  try{ const oc=new OfflineAudioContext(1,1,SR); const b=await oc.decodeAudioData(buf.slice(0)); if(b.sampleRate===SR) return b.getChannelData(0).slice(); }catch(e){}
+  const AC=window.AudioContext||window.webkitAudioContext; const ac=new AC();
+  const b=await new Promise((res,rej)=>ac.decodeAudioData(buf.slice(0),res,rej));
+  const ch=b.getChannelData(0), ratio=b.sampleRate/SR, n=Math.floor(ch.length/ratio), out=new Float32Array(n);
+  for(let i=0;i<n;i++){ const x=i*ratio, i0=Math.floor(x), f=x-i0; out[i]=ch[i0]*(1-f)+(ch[i0+1]||0)*f; }
+  try{ ac.close(); }catch(e){}
+  return out;
+}
+
+function analyze(x){
+  const TMIN=32, TMAX=267, W=320;
+  const n=Math.max(0,Math.floor((x.length-(W+TMAX))/HOP)+1);
+  if(n<15) throw new Error("short");
+  const f0=new Float32Array(n), db=new Float32Array(n), feats=new Array(n);
+  const cm=new Float32Array(TMAX+1), re=new Float32Array(NF), im=new Float32Array(NF), pow=new Float32Array(NF/2+1);
+  for(let t=0;t<n;t++){ const s=t*HOP;
+    let e=0; for(let j=0;j<WIN;j++){ const v=x[s+j]; e+=v*v; } db[t]=10*Math.log10(e/WIN+1e-10);
+    let run=0; cm[0]=1;
+    for(let tau=1;tau<=TMAX;tau++){ let sum=0; for(let j=0;j<W;j++){ const q=x[s+j]-x[s+j+tau]; sum+=q*q; } run+=sum; cm[tau]=run>0?sum*tau/run:1; }
+    let best=-1;
+    for(let tau=TMIN;tau<=TMAX;tau++){ if(cm[tau]<0.15){ while(tau+1<=TMAX&&cm[tau+1]<cm[tau]) tau++; best=tau; break; } }
+    if(best<0){ let mi=9,mt=-1; for(let tau=TMIN;tau<=TMAX;tau++) if(cm[tau]<mi){mi=cm[tau];mt=tau;} if(mi<0.3) best=mt; }
+    if(best>0){ let tb=best; if(best>TMIN&&best<TMAX){ const a=cm[best-1],b=cm[best],c=cm[best+1],den=a-2*b+c; if(den>0) tb=best+0.5*(a-c)/den; } f0[t]=SR/tb; } else f0[t]=0;
+    re.fill(0); im.fill(0); for(let j=0;j<WIN;j++) re[j]=x[s+j]*hann[j]; fft(re,im);
+    for(let k=0;k<=NF/2;k++) pow[k]=re[k]*re[k]+im[k]*im[k];
+    feats[t]=bands(pow);
+  }
+  let maxDb=-1e9; for(let t=0;t<n;t++) if(db[t]>maxDb) maxDb=db[t];
+  let a=0; while(a<n&&db[a]<maxDb-35) a++; let b=n-1; while(b>a&&db[b]<maxDb-35) b--;
+  a=Math.max(0,a-6); b=Math.min(n-1,b+6); const L=b-a+1;
+  const F=new Float32Array(L), D=new Float32Array(L), V=new Uint8Array(L), FT=feats.slice(a,b+1);
+  for(let i=0;i<L;i++){ F[i]=f0[a+i]; D[i]=db[a+i]-maxDb; V[i]=(F[i]>=60&&F[i]<=500&&D[i]>-30)?1:0; }
+  let med=median([...F].filter((v,i)=>V[i])) || 150;
+  for(let i=0;i<L;i++) if(V[i]){ if(F[i]>1.75*med) F[i]/=2; else if(F[i]<0.58*med) F[i]*=2; }
+  const F2=F.slice();
+  for(let i=0;i<L;i++) if(V[i]){ const w=[]; for(let k=-2;k<=2;k++){ const j=i+k; if(j>=0&&j<L&&V[j]) w.push(F[j]); } F2[i]=median(w); }
+  for(let i=0;i<L;){ if(!V[i]){i++;continue;} let j=i; while(j<L&&V[j]) j++; if(j-i<4) for(let k=i;k<j;k++) V[k]=0; i=j; }
+  med=median([...F2].filter((v,i)=>V[i])) || med;
+  const st=new Float32Array(L); for(let i=0;i<L;i++) st[i]=V[i]?12*Math.log2(F2[i]/med):NaN;
+  const mean=new Float32Array(NB); for(const f of FT) for(let k=0;k<NB;k++) mean[k]+=f[k]/L;
+  const feat=FT.map(f=>{ const o=new Float32Array(NB); for(let k=0;k<NB;k++) o[k]=f[k]-mean[k]; return o; });
+  return {n:L, st, db:D, feat, med, t0:a*HOP/SR};
+}
+
+function dtw(A,B){
+  const n=A.length,m=B.length, Dm=new Float32Array(n*m).fill(Infinity), P=new Uint8Array(n*m);
+  const band=Math.max(25,Math.round(0.35*Math.max(n,m)));
+  for(let i=0;i<n;i++){ const jc=Math.round(i*(m-1)/Math.max(1,n-1)), j0=Math.max(0,jc-band), j1=Math.min(m-1,jc+band), a=A[i];
+    for(let j=j0;j<=j1;j++){ const b=B[j]; let c=0; for(let k=0;k<NB;k++){ const q=a[k]-b[k]; c+=q*q; } c=Math.sqrt(c);
+      let best=Infinity,dir=0;
+      if(i===0&&j===0) best=0;
+      else{ if(i>0&&j>0&&Dm[(i-1)*m+j-1]<best){best=Dm[(i-1)*m+j-1];dir=1;}
+            if(i>0&&Dm[(i-1)*m+j]<best){best=Dm[(i-1)*m+j];dir=2;}
+            if(j>0&&Dm[i*m+j-1]<best){best=Dm[i*m+j-1];dir=3;} }
+      Dm[i*m+j]=best+c; P[i*m+j]=dir; } }
+  const path=[]; let i=n-1,j=m-1;
+  if(!isFinite(Dm[i*m+j])){ for(let k=0;k<n;k++) path.push([k,Math.round(k*(m-1)/Math.max(1,n-1))]); return path; }
+  for(;;){ path.push([i,j]); if(i===0&&j===0) break; const d=P[i*m+j]; if(d===1){i--;j--;} else if(d===2) i--; else if(d===3) j--; else break; }
+  return path.reverse();
+}
+
+function smooth(a,w){ const o=new Float32Array(a.length); for(let i=0;i<a.length;i++){ let s=0,c=0; for(let k=-w;k<=w;k++){ const v=a[i+k]; if(v!==undefined&&!isNaN(v)){s+=v;c++;} } o[i]=c?s/c:NaN; } return o; }
+const fmt=s=>s.toFixed(1).replace(".",",")+" s";
+
+function compare(R,M){
+  const path=dtw(R.feat,M.feat);
+  const ss=new Float32Array(R.n), sc=new Float32Array(R.n), ds=new Float32Array(R.n), dc=new Float32Array(R.n), j2i=new Int32Array(M.n).fill(-1);
+  for(const [i,j] of path){ if(!isNaN(M.st[j])){ss[i]+=M.st[j];sc[i]++;} ds[i]+=M.db[j]; dc[i]++; if(j2i[j]<0) j2i[j]=i; }
+  for(let j=1;j<M.n;j++) if(j2i[j]<0) j2i[j]=j2i[j-1];
+  const wst=new Float32Array(R.n), wdb=new Float32Array(R.n);
+  for(let i=0;i<R.n;i++){ wst[i]=sc[i]?ss[i]/sc[i]:NaN; wdb[i]=dc[i]?ds[i]/dc[i]:NaN; }
+  const diff=new Float32Array(R.n).fill(NaN), abs=[], ra=[], ma=[];
+  for(let i=0;i<R.n;i++) if(!isNaN(R.st[i])&&!isNaN(wst[i])){ diff[i]=wst[i]-R.st[i]; abs.push(Math.abs(diff[i])); ra.push(R.st[i]); ma.push(wst[i]); }
+  const regions=[]; const sd=smooth(diff,3);
+  for(let i=0;i<R.n;){ if(!(Math.abs(sd[i])>2.5)){i++;continue;} let j=i, gap=0, sum=0, c=0;
+    while(j<R.n&&gap<=4){ if(Math.abs(sd[j])>2.5){gap=0;sum+=sd[j];c++;} else gap++; j++; }
+    const end=j-gap; if(end-i>=8) regions.push({a:i,b:end,mean:sum/c}); i=j; }
+  const fb=[]; let score=null, corr=null;
+  if(abs.length<10){
+    fb.push({k:"warn",t:"Too little voiced overlap to compare the melody. Check that both recordings are the same sentence and not too quiet."});
+  } else {
+    const meanAbs=abs.reduce((x,y)=>x+y,0)/abs.length;
+    score=Math.round(100*Math.max(0,Math.min(1,1-meanAbs/5)));
+    const mr=ra.reduce((x,y)=>x+y,0)/ra.length, mm=ma.reduce((x,y)=>x+y,0)/ma.length; let num=0,dr=0,dm=0;
+    for(let k=0;k<ra.length;k++){ num+=(ra[k]-mr)*(ma[k]-mm); dr+=(ra[k]-mr)**2; dm+=(ma[k]-mm)**2; }
+    corr=dr&&dm?num/Math.sqrt(dr*dm):0;
+    if(score>=75) fb.push({k:"good",t:"Your melody follows the native curve closely. Keep shadowing at full speed."});
+    else if(corr>0.6) fb.push({k:"info",t:"The shape of your melody is right, but the size of the rises and falls is off. Compare the highlighted spots."});
+    else fb.push({k:"warn",t:"Your melody takes a different shape from the speaker's. Listen at 0.75× and hum the tune before saying the words."});
+    for(const r of regions.slice(0,3)){ const n=Math.abs(r.mean).toFixed(1).replace(".",","); fb.push({k:"warn",t:`Around ${fmt(r.a/100)}–${fmt(r.b/100)} you are about ${n} semitones ${r.mean>0?"higher":"lower"} than the speaker.`}); }
+    const rr=pct(ra,.95)-pct(ra,.05), mrng=pct(ma,.95)-pct(ma,.05);
+    if(rr>0&&mrng>1.5*rr&&mrng-rr>2) fb.push({k:"warn",t:`Your pitch swings over about ${Math.round(mrng)} semitones, the speaker's over ${Math.round(rr)}. Danish statements are fairly flat, so try a calmer melody.`});
+    else if(rr>2&&mrng<0.6*rr) fb.push({k:"warn",t:`Your melody is flatter than the speaker's (${Math.round(mrng)} vs ${Math.round(rr)} semitones). Let the voice rise after the stressed syllable.`});
+  }
+  const rs=smooth(R.db,4), ms=smooth(wdb,4); let ri=0,mi=0; for(let i=0;i<R.n;i++){ if(rs[i]>rs[ri]) ri=i; if(ms[i]>ms[mi]) mi=i; }
+  if(Math.abs(ri-mi)>12) fb.push({k:"warn",t:`The speaker's loudest point is at ${fmt(ri/100)}, yours at ${fmt(mi/100)}. Check which syllable carries the tryk.`});
+  else fb.push({k:"good",t:"Your loudest point lines up with the speaker's, so the main stress is probably on the right syllable."});
+  const ratio=M.n/R.n;
+  if(ratio>1.3) fb.push({k:"info",t:`Your take is ${Math.round((ratio-1)*100)}% longer than the speaker's. Danish runs unstressed syllables together, so aim for less time on the small words.`});
+  else if(ratio<0.75) fb.push({k:"info",t:`Your take is ${Math.round((1-ratio)*100)}% shorter than the speaker's. Slow down a little on the stressed vowels.`});
+  return {wst,wdb,regions,fb,score,corr,j2i};
+}
+
+/* ---------- state ---------- */
+let phrases=[], cur=0;
+const live=new Map(); // id -> {R, refUrl, M, takeUrl, C}
+const S=()=>phrases[cur];
+const L=()=>{ const id=S()&&S().id; if(!live.has(id)) live.set(id,{}); return live.get(id); };
+const uid=()=>Math.random().toString(36).slice(2,10);
+let rate=1;
+
+function msg(t,err){ const m=$("#msg"); m.textContent=t||""; m.className="msg"+(err?" err":""); }
+
+function renderStrip(){
+  const s=$("#strip"); s.textContent="";
+  phrases.forEach((p,i)=>{ const b=document.createElement("button"); b.className="chip"; b.setAttribute("aria-current",i===cur?"true":"false");
+    const d=document.createElement("i"); d.className="dot"+(p.refBuf?" on":""); const t=document.createElement("span"); t.textContent=p.caption||"Untitled";
+    b.append(d,t); b.onclick=()=>select(i); s.append(b); });
+  const add=document.createElement("label"); add.className="chip add"; add.tabIndex=0; add.textContent="+ Add clips";
+  const inp=document.createElement("input"); inp.type="file"; inp.accept="audio/*"; inp.multiple=true; inp.hidden=true; inp.onchange=()=>addClips(inp.files);
+  add.append(inp); add.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); inp.click(); } }; s.append(add);
+}
+function fitCaption(){ const c=$("#caption"); c.style.height="auto"; c.style.height=c.scrollHeight+"px"; }
+function renderCard(){
+  const p=S(), l=L();
+  $("#caption").value=p?p.caption:""; fitCaption();
+  $("#focus").textContent=p?(p.focus||""):"";
+  $("#refName").textContent=p&&p.refBuf?(p.refName||"Native clip"):"No native clip yet";
+  $("#playRef").disabled=!l.refUrl; $("#playMe").disabled=!l.takeUrl;
+  $("#rmBtn").textContent="Remove this phrase"; rmArmed=false;
+}
+async function select(i){ stopAll(); cur=i; msg(""); renderStrip(); renderCard(); await ensureRef(); draw(); renderFb(); }
+
+async function ensureRef(){
+  const p=S(), l=L(); if(!p||!p.refBuf||l.R) return;
+  try{ msg("Analysing the native clip…"); l.R=analyze(await decode(p.refBuf));
+    l.refUrl=URL.createObjectURL(new Blob([p.refBuf],{type:p.refType||"audio/mpeg"})); msg(""); }
+  catch(e){ msg(e.message==="short"?"That clip is too short to analyse.":"Couldn't read that audio file. Try an mp3, m4a, wav or ogg file.",true); }
+  if(S()===p){ $("#playRef").disabled=!l.refUrl; }
+}
+
+async function setRef(file){
+  const p=S(); if(!p) return; const buf=await file.arrayBuffer();
+  p.refBuf=buf; p.refType=file.type; p.refName=file.name; const l=L();
+  if(l.refUrl) URL.revokeObjectURL(l.refUrl); l.R=null; l.refUrl=null; l.C=null;
+  await ensureRef(); if(l.R&&l.M) l.C=compare(l.R,l.M);
+  savePhrase(p); renderStrip(); renderCard(); draw(); renderFb();
+}
+async function setTake(blob){
+  const l=L();
+  try{ msg("Analysing your take…"); const M=analyze(await decode(await blob.arrayBuffer()));
+    if(l.takeUrl) URL.revokeObjectURL(l.takeUrl); l.M=M; l.takeUrl=URL.createObjectURL(blob);
+    l.C=l.R?compare(l.R,M):null; msg(l.R?"":"Load a native clip to compare against."); }
+  catch(e){ msg(e.message==="short"?"Your take is too short. Record the whole sentence.":"Couldn't read that recording.",true); }
+  renderCard(); draw(); renderFb();
+}
+async function addClips(files){
+  if(!files||!files.length) return; const first=phrases.length;
+  for(const f of files){ const p={id:uid(),order:Date.now()+phrases.length,caption:f.name.replace(/\.[^.]+$/,"").replace(/[_-]+/g," ").trim(),focus:"",refBuf:await f.arrayBuffer(),refType:f.type,refName:f.name};
+    phrases.push(p); savePhrase(p); }
+  select(first);
+}
+
+/* ---------- recording ---------- */
+let rec=null, stream=null, recTimer=null;
+async function toggleRec(){
+  if(rec&&rec.state==="recording"){ rec.stop(); return; }
+  stopAll();
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||!window.MediaRecorder){ micOff(); return; }
+  try{ stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:true}}); }
+  catch(e){ micOff(); return; }
+  const chunks=[]; rec=new MediaRecorder(stream);
+  rec.ondataavailable=e=>{ if(e.data&&e.data.size) chunks.push(e.data); };
+  rec.onstop=()=>{ clearTimeout(recTimer); stream.getTracks().forEach(t=>t.stop()); const b=$("#recBtn"); b.classList.remove("on"); b.textContent="● Record";
+    setTake(new Blob(chunks,{type:rec.mimeType||"audio/webm"})); rec=null; };
+  rec.start(); const b=$("#recBtn"); b.classList.add("on"); b.textContent="■ Stop"; msg("Recording. Say the sentence, then tap Stop.");
+  recTimer=setTimeout(()=>{ if(rec&&rec.state==="recording") rec.stop(); },15000);
+}
+function micOff(){ msg("The microphone isn't available here. Record with your phone's voice recorder and use “Upload a take instead”.",true); }
+
+/* ---------- playback + playhead ---------- */
+const audio=new Audio(); let playing=null, raf=0;
+function stopAll(){ audio.pause(); playing=null; cancelAnimationFrame(raf); draw(); }
+function play(which){
+  const l=L(); const url=which==="ref"?l.refUrl:l.takeUrl; if(!url) return;
+  if(playing===which){ stopAll(); return; }
+  audio.pause(); audio.src=url; audio.playbackRate=rate; audio.preservesPitch=true; audio.webkitPreservesPitch=true;
+  playing=which; audio.play().catch(()=>{ playing=null; });
+  const loop=()=>{ draw(); if(playing) raf=requestAnimationFrame(loop); }; loop();
+}
+audio.onended=()=>{ playing=null; draw(); };
+function headIndex(){
+  const l=L(); if(!playing||!l.R) return -1;
+  if(playing==="ref") return Math.round((audio.currentTime-l.R.t0)*100);
+  if(!l.M||!l.C) return -1; const j=Math.round((audio.currentTime-l.M.t0)*100);
+  if(j<0) return -1; if(j>=l.M.n) return l.R.n; return l.C.j2i[j];
+}
+
+/* ---------- drawing ---------- */
+function tok(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+function setup(cv){ const dpr=window.devicePixelRatio||1, w=cv.clientWidth, h=+cv.getAttribute("height"); cv.style.height=h+"px";
+  if(cv.width!==Math.round(w*dpr)){ cv.width=Math.round(w*dpr); } const ctx=cv.getContext("2d"); ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,w,h); return {ctx,w,h}; }
+function line(ctx,arr,X,Y,color,width,dash){ ctx.strokeStyle=color; ctx.lineWidth=width; ctx.setLineDash(dash||[]); ctx.lineJoin="round"; ctx.lineCap="round"; ctx.beginPath(); let pen=false;
+  for(let i=0;i<arr.length;i++){ const v=arr[i]; if(v===undefined||isNaN(v)){ pen=false; continue; } const x=X(i), y=Y(v); if(pen) ctx.lineTo(x,y); else { ctx.moveTo(x,y); pen=true; } } ctx.stroke(); ctx.setLineDash([]); }
+
+function example(){
+  const n=220, r=new Float32Array(n), m=new Float32Array(n), d=new Float32Array(n), md=new Float32Array(n);
+  for(let i=0;i<n;i++){ const t=i/n; const v=(t>.08&&t<.28)||(t>.36&&t<.6)||(t>.68&&t<.93);
+    r[i]=v?(2.2-4*t+2.4*Math.exp(-(((t-.45)/.07)**2))-(t>.8&&t<.84?3:0)):NaN;
+    m[i]=v?(3.2-5.5*t+4.2*Math.exp(-(((t-.47)/.08)**2))):NaN;
+    d[i]=v?-4-10*Math.abs(t-.45):-34; md[i]=v?-5-9*Math.abs(t-.5):-34; }
+  return {R:{n,st:r,db:d},C:{wst:m,wdb:md,regions:[{a:88,b:118}]}};
+}
+
+function draw(){
+  const l=L(); let R=l.R, C=l.C, ex=false;
+  if(!R){ const e=example(); R=e.R; C=e.C; ex=true; }
+  const ink=tok("--ink"), muted=tok("--muted"), lineC=tok("--line"), refC=tok("--ref"), meC=tok("--me"), wbg=tok("--warn-bg"), font="11px "+tok("--f-num");
+  const head=headIndex();
+  // pitch
+  { const {ctx,w,h}=setup($("#cPitch")); const padL=30,padR=8,padT=10,padB=22, lo=-8, hi=8;
+    const X=i=>padL+(i/(Math.max(1,R.n-1)))*(w-padL-padR), Y=v=>padT+(1-(Math.max(lo,Math.min(hi,v))-lo)/(hi-lo))*(h-padT-padB);
+    if(C) for(const r of C.regions){ ctx.fillStyle=wbg; ctx.fillRect(X(r.a),padT,Math.max(2,X(r.b)-X(r.a)),h-padT-padB); }
+    ctx.font=font; ctx.fillStyle=muted; ctx.textAlign="right"; ctx.textBaseline="middle";
+    for(const v of [-6,-3,0,3,6]){ ctx.strokeStyle=lineC; ctx.lineWidth=v===0?1:.5; ctx.beginPath(); ctx.moveTo(padL,Y(v)); ctx.lineTo(w-padR,Y(v)); ctx.stroke(); ctx.fillText((v>0?"+":"")+v,padL-6,Y(v)); }
+    ctx.textAlign="center"; ctx.textBaseline="top"; const dur=R.n/100, step=dur>4?1:0.5;
+    for(let s=0;s<=dur+1e-6;s+=step){ const x=X(s*100); if(x>w-padR-8&&s>0) break; ctx.fillText(s.toString().replace(".",",")+(s===0?" s":""),x,h-padB+6); }
+    line(ctx,R.st,X,Y,refC,ex?2:2.5,ex?[4,4]:null);
+    if(C) line(ctx,C.wst,X,Y,meC,2,ex?[4,4]:null);
+    if(ex){ ctx.fillStyle=ink; ctx.textAlign="left"; ctx.textBaseline="top"; ctx.font="600 12px "+tok("--f-ui"); ctx.fillText("Example curves · load a native clip to start",padL+4,padT+2); }
+    if(head>=0){ ctx.strokeStyle=ink; ctx.lineWidth=1.5; ctx.beginPath(); ctx.moveTo(X(Math.min(head,R.n-1)),padT); ctx.lineTo(X(Math.min(head,R.n-1)),h-padB); ctx.stroke(); }
+  }
+  // loudness
+  { const {ctx,w,h}=setup($("#cLoud")); const padL=30,padR=8,padT=6,padB=6, lo=-35, hi=0;
+    const X=i=>padL+(i/(Math.max(1,R.n-1)))*(w-padL-padR), Y=v=>padT+(1-(Math.max(lo,Math.min(hi,v))-lo)/(hi-lo))*(h-padT-padB);
+    ctx.strokeStyle=lineC; ctx.lineWidth=.5; ctx.beginPath(); ctx.moveTo(padL,Y(lo)); ctx.lineTo(w-padR,Y(lo)); ctx.stroke();
+    ctx.font=font; ctx.fillStyle=muted; ctx.textAlign="right"; ctx.textBaseline="middle"; ctx.fillText("dB",padL-6,Y(-17));
+    const rs=smooth(R.db,2);
+    ctx.fillStyle=refC; ctx.globalAlpha=.16; ctx.beginPath(); ctx.moveTo(X(0),Y(lo)); for(let i=0;i<R.n;i++) ctx.lineTo(X(i),Y(isNaN(rs[i])?lo:rs[i])); ctx.lineTo(X(R.n-1),Y(lo)); ctx.closePath(); ctx.fill(); ctx.globalAlpha=1;
+    line(ctx,rs,X,Y,refC,1.5,ex?[4,4]:null);
+    if(C) line(ctx,smooth(C.wdb,2),X,Y,meC,1.5,ex?[4,4]:null);
+    if(head>=0){ ctx.strokeStyle=ink; ctx.lineWidth=1.5; ctx.beginPath(); ctx.moveTo(X(Math.min(head,R.n-1)),padT); ctx.lineTo(X(Math.min(head,R.n-1)),h-padB); ctx.stroke(); }
+  }
+}
+
+function renderFb(){
+  const l=L(), sc=$("#score"), ul=$("#fbList"); sc.textContent=""; ul.textContent="";
+  const add=(k,t)=>{ const li=document.createElement("li"); li.className=k; li.textContent=t; ul.append(li); };
+  if(!l.R){ add("info","Load a native clip for this phrase. It can be a recording of a Danish friend, a clip from DR or a podcast, or a word from Forvo."); add("info","Then play it, record yourself saying the same thing, and the two melodies are overlaid above."); return; }
+  if(!l.C){ add("info","Play the native clip a few times, then tap Record and say the same sentence."); return; }
+  if(l.C.score!==null){ const b=document.createElement("b"); b.textContent=l.C.score; const s=document.createElement("small");
+    s.textContent="melody match out of 100"+(l.C.corr!==null?` · shape correlation ${l.C.corr.toFixed(2).replace(".",",")}`:""); sc.append(b,s); }
+  for(const f of l.C.fb) add(f.k,f.t);
+  add("info","This is a rough guide based on pitch and loudness. It can't judge vowels, soft d or stød directly, so look at the curves and trust your ear too.");
+}
+
+/* ---------- wiring ---------- */
+$("#caption").addEventListener("input",()=>{ fitCaption(); const p=S(); if(!p) return; p.caption=$("#caption").value; clearTimeout(window.__cs); window.__cs=setTimeout(()=>{ savePhrase(p); renderStrip(); },400); });
+$("#refFile").onchange=e=>{ const f=e.target.files[0]; if(f) setRef(f); e.target.value=""; };
+$("#takeFile").onchange=e=>{ const f=e.target.files[0]; if(f){ stopAll(); setTake(f); } e.target.value=""; };
+$("#playRef").onclick=()=>play("ref");
+$("#playMe").onclick=()=>play("me");
+$("#recBtn").onclick=toggleRec;
+const setRate=r=>{ rate=r; audio.playbackRate=r; $("#sp1").setAttribute("aria-pressed",r===1); $("#sp75").setAttribute("aria-pressed",r!==1); };
+$("#sp1").onclick=()=>setRate(1); $("#sp75").onclick=()=>setRate(.75);
+let rmArmed=false;
+$("#rmBtn").onclick=()=>{ if(!rmArmed){ rmArmed=true; $("#rmBtn").textContent="Tap again to remove"; return; }
+  const p=S(); if(!p) return; stopAll(); deletePhrase(p.id); live.delete(p.id); phrases.splice(cur,1);
+  if(!phrases.length){ const s={id:uid(),order:Date.now(),caption:"Ny sætning",focus:""}; phrases.push(s); savePhrase(s); }
+  select(Math.max(0,cur-1)); };
+window.addEventListener("resize",()=>draw());
+try{ matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>draw()); }catch(e){}
+new MutationObserver(()=>draw()).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
+if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>draw());
+
+(async function init(){
+  phrases=STARTERS.map((s,i)=>({id:"s"+i,order:i,caption:s.caption,focus:s.focus}));
+  renderStrip(); renderCard(); draw(); renderFb();
+  const saved=await loadPhrases();
+  if(saved&&saved.length){ saved.sort((a,b)=>a.order-b.order); phrases=saved; }
+  else phrases.forEach(savePhrase);
+  cur=0; renderStrip(); renderCard(); await ensureRef(); draw(); renderFb();
+})();
+})();
+</script>
+</body></html>
